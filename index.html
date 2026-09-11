@@ -65,6 +65,7 @@
   .dpad .e{visibility:hidden}
   #btnA{width:70px;height:70px;border-radius:50%;font-size:14px}
   #help{background:#1a1930;border:4px solid var(--panel-edge);box-shadow:inset 0 0 0 2px #0e0d18;padding:8px 12px;margin-top:8px;color:var(--muted);font-size:17px}
+  #help .saved{color:var(--green);margin-top:5px}
   #msg{font-family:'Press Start 2P','Courier New',monospace;font-size:10px;line-height:1.6;color:var(--gold);min-height:16px;margin-bottom:4px;white-space:pre-wrap}
   #msg.dim{color:var(--muted)}
   .panel.menu{left:0;right:0;bottom:14px;background:transparent;border:0;box-shadow:none;text-align:center;padding:0}
@@ -158,7 +159,7 @@
       <span class="stat">Trust <span class="bar trust"><i id="hTrust"></i></span><span class="mandate" id="hMandate"></span></span>
       <span class="stat">Risk <span class="bar risk"><i id="hRisk"></i></span></span>
       <span class="stat hearts" id="hHearts" title="Hearts. Risk at 100 costs one."></span></div>
-    <span class="snd"><button type="button" id="btnMusic" title="Music on/off">MUSIC</button><button type="button" id="btnSfx" title="Sound effects on/off">SFX</button><button type="button" id="btnDev" title="Developer bar on/off">DEV</button></span>
+    <span class="snd"><button type="button" id="btnPause" title="Pause (P or Escape)">PAUSE</button><button type="button" id="btnMusic" title="Music on/off">MUSIC</button><button type="button" id="btnSfx" title="Sound effects on/off">SFX</button><button type="button" id="btnDev" title="Developer bar on/off">DEV</button></span>
     <div class="line"><span class="room" id="hRoom"></span><span class="prog" id="hProg"></span><span class="item" id="hItem"></span><span class="key" id="hKey"></span></div>
   </div>
   <div id="stage">
@@ -175,7 +176,7 @@
     <button id="btnA" type="button">A</button>
   </div>
   <audio id="theme" src="assets/crystal-map.mp3" loop preload="auto"></audio>
-  <div id="help"><div id="msg">&nbsp;</div><div class="ctl">Move: arrow keys or WASD. Talk, read, swing laptop: Space or E. Notebook: N. Answer with 1 to 4.</div><div class="ctl touch">Move: the d-pad. Talk, read, swing laptop: the A button. Notebook: the button above the screen. Answer: tap an option.</div></div>
+  <div id="help"><div id="msg">&nbsp;</div><div class="ctl">Move: arrow keys or WASD. Talk, read, swing laptop: Space or E. Notebook: N. Answer with 1 to 4. Pause: P or Escape.</div><div class="ctl touch">Move: the d-pad. Talk, read, swing laptop: the A button. Notebook: the button above the screen. Answer: tap an option. Pause: the PAUSE button.</div><div class="saved">Progress saves in this browser as you play. Close the tab whenever you like and pick up from the title screen.</div></div>
   <div id="dev" hidden><b>DEV</b>
     <select id="devRoom"></select>
     <button type="button" id="devJump">Jump to room</button>
@@ -1519,7 +1520,7 @@ const S={
   current:null, audit:null, boss:null, maze:null, hasLaptop:false, hasBriefcase:false, hasBook:false, rs:null,
   stack:[], hints:0, missed:[], riskAlert:false, incidentScene:false, midIdx:0, doorMsgT:0,
   ev:{}, board:{}, facts:{}, cards:{}, caseDone:false, key:null,
-  initials:"AAA", playSec:0, scored:false, fw:null
+  initials:"AAA", playSec:0, scored:false, fw:null, paused:null
 };
 /* wrong answers come back in the final audit; a right answer there recovers half of what they cost */
 function addMiss(q,a,lost){
@@ -2545,6 +2546,7 @@ const KMAP={w:"ArrowUp",a:"ArrowLeft",s:"ArrowDown",d:"ArrowRight",W:"ArrowUp",A
 window.addEventListener("keydown",e=>{
   const k=KMAP[e.key]||e.key;
   if(e.target&&e.target.closest&&e.target.closest("#dev"))e.target.blur();   // keys belong to the game, not the dev bar
+  if((e.key==="Escape"||e.key==="p"||e.key==="P")&&(S.paused||PAUSABLE.includes(S.mode))){togglePause();e.preventDefault();return;}
   if(S.mode==="play"||S.mode==="boss"||S.mode==="maze"){
     if(k.startsWith("Arrow")){S.keys.add(k);e.preventDefault();}
     if(e.key===" "||e.key==="e"||e.key==="E"||e.key==="Enter"){action();e.preventDefault();}
@@ -2579,9 +2581,32 @@ function occupied(px,py){
 }
 function tileBlocked(x,y){const pts=[[x+7,y+18],[x+24,y+18],[x+7,y+31],[x+24,y+31]];return pts.some(p=>SOLID.has(tileAt(p[0],p[1])));}
 function blocked(x,y){const pts=[[x+7,y+18],[x+24,y+18],[x+7,y+31],[x+24,y+31]];return pts.some(p=>SOLID.has(tileAt(p[0],p[1]))||occupied(p[0],p[1]));}
+/* Pausing is only offered while the game is actually running. Dialogs are already still,
+   and the final audit runs as a dialog, so its clock can never be stopped this way. */
+const PAUSABLE=["play","boss","maze","fw"];
+function togglePause(){
+  if(S.paused){resumeGame();return;}
+  if(!PAUSABLE.includes(S.mode))return;
+  S.paused={mode:S.mode,at:Date.now()}; S.keys.clear(); S.mode="paused"; sfx("select");
+  document.getElementById("btnPause").textContent="RESUME";
+  show('<h1>Paused</h1>'+
+    '<div class="info"><p>Your progress is saved in this browser after every answer and every room.</p>'+
+    '<p>Close the tab whenever you like. Continue on the title screen puts you back at the door of this room.</p></div>'+
+    '<div class="row"><button class="btn primary" id="go">Resume</button></div>',"full");
+  overlay.querySelector("#go").onclick=resumeGame;
+}
+function resumeGame(){
+  const p=S.paused; if(!p)return;
+  if(S.rs)S.rs.start+=Date.now()-p.at;   // the room timer owes back the time it stood still
+  S.paused=null; S.keys.clear();
+  document.getElementById("btnPause").textContent="PAUSE";
+  hide(); S.mode=p.mode; hud();
+}
+document.getElementById("btnPause").onclick=e=>{e.currentTarget.blur();togglePause();};
+
 function update(){
   S.t++;
-  if(S.t%60===0&&saveArmed&&S.mode!=="title"&&S.mode!=="end"&&S.mode!=="initials"&&S.mode!=="brief")S.playSec++;
+  if(S.t%60===0&&saveArmed&&!S.paused&&S.mode!=="title"&&S.mode!=="end"&&S.mode!=="initials"&&S.mode!=="brief")S.playSec++;
   if(S.mode==="fw"){fwUpdate();return;}
   if(S.mode!=="play"&&S.mode!=="boss"&&S.mode!=="maze")return;
   const p=S.player; let dx=0,dy=0;
@@ -3074,7 +3099,7 @@ function drawScorePlate(){
 function drawHeart(x,y,on){const c=on?"#ef6f6c":"#3a3a4a";R(x+2,y,4,2,c);R(x+8,y,4,2,c);R(x,y+2,14,4,c);R(x+2,y+6,10,2,c);R(x+4,y+8,6,2,c);R(x+6,y+10,2,2,c);}
 function render(){
   const rm=room(), pal=rm.pal;
-  if(S.fw&&(S.mode==="fw"||S.mode==="dialog")){drawFirewall();drawScorePlate();setMsg("Arrows: move the firewall. Block red, let green through.",true);return;}
+  if(S.fw&&(S.mode==="fw"||S.mode==="dialog"||S.mode==="paused")){drawFirewall();drawScorePlate();setMsg("Arrows: move the firewall. Block red, let green through.",true);return;}
   for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)drawTile(rm.map[r][c],c*TILE,r*TILE,pal);
   drawRugEmblem(rm); drawMats(rm); drawPillars();
   if(rm.final)drawGate(rm.open);
