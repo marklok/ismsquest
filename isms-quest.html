@@ -81,6 +81,8 @@
   .scores .ini{font-family:'Press Start 2P','Courier New',monospace;font-size:10px;letter-spacing:2px}
   #hud .ini{color:var(--green);letter-spacing:1px}
   .menu button:hover,.menu button:focus-visible{color:var(--gold);border-color:var(--gold);outline:0}
+  .menu .hiscore{display:block;width:220px;margin:0 auto 8px;padding:7px 6px;background:rgba(27,26,46,.85);border:3px solid #6a5a2a;font-family:'Press Start 2P','Courier New',monospace;font-size:9px;line-height:1;color:var(--muted)}
+  .menu .hiscore b{color:var(--gold)}
   .menu button:hover::before,.menu button:focus-visible::before{content:"\25B6";position:absolute;left:12px;color:var(--gold)}
   .stars{color:var(--gold);letter-spacing:2px} .stars .off{color:#3a3a4a}
   ol.journey{padding-left:22px;margin:0 0 10px} ol.journey li{margin-bottom:6px} .journey .cl{color:var(--gold);font-family:'Press Start 2P','Courier New',monospace;font-size:9px;margin-right:4px}
@@ -1543,7 +1545,8 @@ function hud(){
 function showTitle(){
   S.mode="title"; musicPlay("title");
   const saved=loadGame();
-  show((saved?'<button type="button" id="cont">Continue'+(saved.ini?' ('+esc(saved.ini)+')':'')+'</button>':'')+'<button type="button" id="play">'+(saved?"New game":"Play")+'</button><button type="button" id="scores">Scoreboard</button><button type="button" id="instr">Instructions</button>'+(DEV.on?'<button type="button" id="test">Test a room</button>':''),"menu");
+  const hs=loadScores()[0];
+  show((hs?'<div class="hiscore">HIGH SCORE <b>'+hs.score+' '+esc(hs.ini)+'</b></div>':'')+(saved?'<button type="button" id="cont">Continue'+(saved.ini?' ('+esc(saved.ini)+')':'')+'</button>':'')+'<button type="button" id="play">'+(saved?"New game":"Play")+'</button><button type="button" id="scores">Scoreboard</button><button type="button" id="instr">Instructions</button>'+(DEV.on?'<button type="button" id="test">Test a room</button>':''),"menu");
   if(saved)overlay.querySelector("#cont").onclick=()=>{sfx("select");restoreGame(saved);};
   overlay.querySelector("#play").onclick=()=>{sfx("select");showInitials();};
   overlay.querySelector("#scores").onclick=()=>{sfx("select");showScores(showTitle);};
@@ -1637,7 +1640,12 @@ function restoreGame(d){
 function bestStars(){ try{return JSON.parse(localStorage.getItem(BEST_KEY)||"{}");}catch(e){return {};} }
 function recordBest(r,stars){ try{const b=bestStars();if((b[r.id]||0)<stars){b[r.id]=stars;localStorage.setItem(BEST_KEY,JSON.stringify(b));}}catch(e){} }
 /* ---------- dev / test mode: ?dev or ?room=2 (or ?room=boardroom) in the URL ---------- */
+/* Dev tooling is for testing only. On any host that is not this machine the DEV button, the
+   ?dev and ?room switches, the stored flag and the window.ISMS test hook all stay off, and a
+   dev run never reaches the scoreboard. */
+const LOCAL=/^(localhost|127\.0\.0\.1|\[::1\]|::1)?$/.test(location.hostname)||location.protocol==="file:";
 const DEV=(()=>{
+  if(!LOCAL)return {on:false, room:null};
   const p=new URLSearchParams(location.search), h=new URLSearchParams(location.hash.replace(/^#\??/,""));
   const get=k=>p.get(k)!==null?p.get(k):h.get(k);
   let stored=false; try{stored=localStorage.getItem("isms-quest.dev")==="1";}catch(e){}
@@ -1679,6 +1687,7 @@ function showRoomSelect(){
 }
 let devWired=false;
 function enableDev(on,boot){
+  if(!LOCAL)on=false;
   DEV.on=on; try{localStorage.setItem("isms-quest.dev",on?"1":"0");}catch(e){}
   const bar=document.getElementById("dev"), sel=document.getElementById("devRoom");
   bar.hidden=!on; document.getElementById("btnDev").classList.toggle("off",!on);
@@ -1694,6 +1703,7 @@ function enableDev(on,boot){
   }
   if(!boot&&S.mode==="title")showTitle();
 }
+document.getElementById("btnDev").hidden=!LOCAL;
 document.getElementById("btnDev").onclick=e=>{e.currentTarget.blur();sfx("select");enableDev(!DEV.on);};
 document.getElementById("btnDev").classList.toggle("off",!DEV.on);
 if(DEV.on)enableDev(true,true);
@@ -2079,7 +2089,7 @@ function coinQuestion(){
 }
 
 /* ---------- Firewall Invaders: the hacker in the corner office ---------- */
-const FW={left:24,right:488,top:58,wallY:290,wallW:72,lapY:318,bad:12,good:10};
+const FW={left:24,right:488,top:74,wallY:290,wallW:72,lapY:318,bad:12,good:10};
 function hackerTalk(n){
   simple(n.name,n.role,n.idle,"Block him",()=>{
     S.mode="dialog";
@@ -2134,9 +2144,9 @@ function drawFirewall(){
   if(f.flash>0&&(S.t>>1)%2)R(14,14,484,356,"#3a1020");
   for(let y=FW.top;y<FW.lapY;y+=16)R(FW.left,y,FW.right-FW.left,1,"#0d1c2a");
   for(let y=14;y<370;y+=4)R(14,y,484,1,"rgba(0,0,0,.18)");
-  drawText("FIREWALL INVADERS",22,30,"#f2c14e",10);
-  drawText("PKT "+f.i+"/"+f.seq.length+"  BLOCKED "+f.blocked+"  DROPPED "+f.dropped,232,30,"#a9a6c9",8);
-  drawText("CATCH RED",22,46,"#ef6f6c",8); drawText("LET GREEN PASS",122,46,"#5fcf80",8);
+  drawText("FIREWALL INVADERS",22,46,"#f2c14e",10);
+  drawText("PKT "+f.i+"/"+f.seq.length+"  BLOCKED "+f.blocked+"  DROPPED "+f.dropped,232,46,"#a9a6c9",8);
+  drawText("CATCH RED",22,62,"#ef6f6c",8); drawText("LET GREEN PASS",122,62,"#5fcf80",8);
   f.pk.forEach(p=>{
     const c=p.bad?"#ef6f6c":"#5fcf80"; R(p.x-1,p.y-1,18,14,OUT); R(p.x,p.y,16,12,c);
     if(p.bad){R(p.x+4,p.y+3,2,2,OUT);R(p.x+10,p.y+3,2,2,OUT);R(p.x+6,p.y+5,4,2,OUT);R(p.x+4,p.y+7,2,2,OUT);R(p.x+10,p.y+7,2,2,OUT);}
@@ -2257,7 +2267,7 @@ function showEnd(){
   if(!S.scored){
     S.scored=true; sfx("clear");
     S.entry={ini:S.initials,score:S.score,max,pct:Math.round(pct*100),trust:S.trust,risk:S.risk,stars,time:S.playSec,date:new Date().toISOString().slice(0,10)};
-    S.rank=recordScore(S.entry).rank;
+    S.rank=DEV.on?0:recordScore(S.entry).rank;
   }
   show('<h1 style="text-align:center">You completed ISMS Quest!</h1><div class="ini-big">'+esc(S.initials)+'</div>'+
     '<h2>'+esc(title)+'</h2><p>'+esc(body)+'</p>'+extra+
@@ -2266,7 +2276,7 @@ function showEnd(){
     '<div>Time played</div><div>'+fmtT(S.playSec)+'</div><div>Rooms cleared</div><div>'+cleared+' of '+ROOMS.length+'</div>'+
     '<div>Answers</div><div>'+right+' good of '+S.log.length+'</div><div>Hearts left</div><div>'+Math.max(0,S.hearts)+' of '+MAX_HEARTS+'</div>'+
     '<div>Trust</div><div>'+S.trust+'</div><div>Risk</div><div>'+S.risk+'</div>'+
-    '<div>Scoreboard</div><div class="good-t">#'+S.rank+' in this browser</div></div>'+
+    '<div>Scoreboard</div><div class="'+(S.rank?'good-t':'muted')+'">'+(S.rank?'#'+S.rank+' in this browser':'not recorded, dev mode')+'</div></div>'+
     '<h2>Scoreboard</h2>'+scoreTable(loadScores(),5,S.entry)+
     '<details><summary>Your decisions</summary>'+logHtml()+'</details>'+
     '<div class="row"><button class="btn primary" id="again">Play again</button><button class="btn" id="sc">Full scoreboard</button><button class="btn" id="nb">Open notebook</button></div>',"full");
@@ -3005,10 +3015,16 @@ function drawDark(px,py,rad){
   ctx.drawImage(dk,0,0);
 }
 function drawText(txt,x,y,c,size){ctx.font=(size||10)+"px 'Press Start 2P','Courier New',monospace";ctx.fillStyle="#1b1a2e";ctx.fillText(txt,x+1,y+1);ctx.fillStyle=c;ctx.fillText(txt,x,y);}
+/* top centre is the one strip free in every mode: hearts sit left, the boss bar right */
+function drawScorePlate(){
+  const txt="SCORE "+S.score, w=txt.length*8+14, x=Math.round((cv.width-w)/2);
+  R(x,4,w,18,"rgba(27,26,46,.82)"); R(x,4,w,1,"#3a3a4a"); R(x,21,w,1,"#3a3a4a");
+  drawText(txt,x+7,17,"#f2c14e",8);
+}
 function drawHeart(x,y,on){const c=on?"#ef6f6c":"#3a3a4a";R(x+2,y,4,2,c);R(x+8,y,4,2,c);R(x,y+2,14,4,c);R(x+2,y+6,10,2,c);R(x+4,y+8,6,2,c);R(x+6,y+10,2,2,c);}
 function render(){
   const rm=room(), pal=rm.pal;
-  if(S.fw&&(S.mode==="fw"||S.mode==="dialog")){drawFirewall();setMsg("Arrows: move the firewall. Block red, let green through.",true);return;}
+  if(S.fw&&(S.mode==="fw"||S.mode==="dialog")){drawFirewall();drawScorePlate();setMsg("Arrows: move the firewall. Block red, let green through.",true);return;}
   for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)drawTile(rm.map[r][c],c*TILE,r*TILE,pal);
   drawRugEmblem(rm); drawMats(rm); drawPillars();
   if(rm.final)drawGate(rm.open);
@@ -3048,6 +3064,7 @@ function render(){
   else if(S.mode==="maze"){col="#f2c14e";msg=rm.open?"Door open. Run for it.":"Tokens "+S.maze.tokens+"/"+rm.need+". Viktor wants your budget.";}
   setMsg(msg,col!=="#a9a6c9");
   if(rm.clock&&!rm.open&&S.rs&&S.mode!=="title"){const left=Math.max(0,rm.clock-(Date.now()-S.rs.start)/1000);R(cv.width-78,6,72,18,"rgba(27,26,46,.85)");drawText(fmtT(left),cv.width-70,19,left<=30&&(S.t>>4)%2?"#ef6f6c":"#f2c14e",10);}
+  if(!["title","brief","initials","end"].includes(S.mode))drawScorePlate();
   if(S.banner&&S.t<S.banner.until){
     const lines=wrap(S.banner.text,60); const hgt=12+lines.length*14;
     R(0,40,cv.width,hgt,"rgba(27,26,46,.92)");R(0,40,cv.width,2,"#f2c14e");R(0,40+hgt-2,cv.width,2,"#f2c14e");
