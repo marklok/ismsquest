@@ -95,6 +95,7 @@
   details{margin-bottom:10px} details summary{cursor:pointer;color:var(--blue);font-family:'Press Start 2P','Courier New',monospace;font-size:9px;padding:4px 0} details .fb{margin-top:6px}
   .good-t{color:var(--green)} .bad-t{color:var(--red)}
   #dev{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;margin-top:10px;padding:8px;border:2px dashed var(--red);color:var(--muted);font-size:16px}
+  #dev[hidden]{display:none}
   #dev select,#dev button{font:inherit;font-size:16px;background:var(--panel);color:var(--paper);border:2px solid var(--panel-edge);padding:4px 8px;cursor:pointer}
   #dev b{color:var(--red);font-family:'Press Start 2P','Courier New',monospace;font-size:9px}
   .nb-room{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;padding:10px;background:#15142a;border-left:4px solid var(--panel-edge)}
@@ -129,7 +130,7 @@
     .menu .hiscore{width:190px;font-size:8px;padding:5px 4px;margin-bottom:6px;border-width:2px}
     .menu .subtitle{font-size:9px;margin-bottom:5px}
     .menu .tagline{font-size:7px;line-height:1.7;margin-bottom:6px}
-    .menu .credit{display:none}   /* a phone canvas has no room for the joke line */
+    .menu .credit{font-size:6px;margin-top:6px}
     .panel h1{font-size:12px}
     .panel h2{font-size:9px}
     .opts button,.btn{font-size:17px}
@@ -1584,7 +1585,7 @@ function showTitle(){
   const hs=loadScores()[0];
   show('<div class="subtitle">THE LEAD IMPLEMENTER</div>'+
     '<div class="tagline">ISO/IEC 27001:2022 &middot; ANNEX A</div>'+
-    (hs?'<div class="hiscore">HIGH SCORE <b>'+hs.score+' '+esc(hs.ini)+'</b></div>':'')+(saved?'<button type="button" id="cont">Continue'+(saved.ini?' ('+esc(saved.ini)+')':'')+'</button>':'')+'<button type="button" id="play">'+(saved?"New game":"Play")+'</button><button type="button" id="scores">Scoreboard</button><button type="button" id="instr">Instructions</button>'+(DEV.on?'<button type="button" id="test">Test a room</button>':'')+'<div class="credit">A CHAOTIC CONSULTING PRODUCTION</div>',"menu");
+    (hs?'<div class="hiscore">HIGH SCORE <b>'+hs.score+' '+esc(hs.ini)+'</b></div>':'')+(saved?'<button type="button" id="cont">Continue'+(saved.ini?' ('+esc(saved.ini)+')':'')+'</button>':'')+'<button type="button" id="play">'+(saved?"New game":"Play")+'</button><button type="button" id="scores">Scoreboard</button><button type="button" id="instr">Instructions</button>'+(DEV.on?'<button type="button" id="test">Test a room</button>':'')+'<div class="credit">A MARKUS.LEGAL PRODUCTION</div>',"menu");
   if(saved)overlay.querySelector("#cont").onclick=()=>{sfx("select");restoreGame(saved);};
   overlay.querySelector("#play").onclick=()=>{sfx("select");showInitials();};
   overlay.querySelector("#scores").onclick=()=>{sfx("select");showScores(showTitle);};
