@@ -112,6 +112,9 @@
   .anchors .cl{font-family:'Press Start 2P','Courier New',monospace;font-size:9px;margin-right:6px}
   .anchors details{margin:4px 0 0 24px}
   .muted{color:var(--muted)}
+  .commahint{display:none;color:var(--muted);font-size:15px;margin-top:5px}
+  .expand{position:absolute;top:5px;right:6px;font-family:'Press Start 2P','Courier New',monospace;font-size:8px;line-height:1;background:var(--panel);color:var(--gold);border:2px solid var(--panel-edge);padding:5px 7px;cursor:pointer}
+  .expand:hover{color:var(--paper)}
   .ctl.touch{display:none}
   /* Phones: the status panel becomes three tidy rows, the controls sit together on the first,
      and the menu gives the artwork back the middle of the screen. */
@@ -144,8 +147,16 @@
     .panel p{font-size:17px;margin-bottom:8px}
     #overlay.on:not(.ov-menu){position:fixed;inset:0;z-index:60;background:rgba(10,9,24,.78);display:flex;align-items:center;padding:8px}
     #overlay.on.ov-dialog{align-items:flex-end}
-    #overlay.on:not(.ov-menu) .panel{position:static;inset:auto;width:100%;max-height:100%}
+    #overlay.on:not(.ov-menu) .panel{position:relative;inset:auto;width:100%;max-height:100%}
     .panel.full{inset:6px}
+  }
+  /* an on-screen number pad is where a full stop goes missing, whatever the screen width */
+  @media (pointer: coarse){ .commahint{display:block} }
+  /* only a touch pointer has thumbs resting at the bottom of the screen */
+  @media (max-width:699px) and (pointer: coarse){
+    #overlay.on.ov-dialog{padding-bottom:var(--thumbs,8px)}
+    #overlay.on.ov-dialog.tall{padding-bottom:8px}
+    .panel.expandable{padding-top:30px}
   }
   @media (min-width:700px){ #touch{display:none} }
   @media (prefers-reduced-motion:reduce){ #hud .bar i{transition:none} .menu .tagline{animation:none} }
@@ -1549,7 +1560,33 @@ function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));}
 /* text may be one string or an array of sections; each section becomes its own paragraph */
 function paras(t){return (Array.isArray(t)?t:String(t).split(/\n\n+/)).map(p=>'<p>'+esc(p)+'</p>').join("");}
-function show(html,cls){overlay.className="on ov-"+(cls||"full");overlay.innerHTML='<div class="panel '+cls+'">'+html+'</div>';const p=overlay.firstElementChild;const f=overlay.querySelector("input,button");if(f){try{f.focus({preventScroll:true});}catch(e){f.focus();}}p.scrollTop=0;requestAnimationFrame(()=>{p.scrollTop=0;});}
+const COARSE=!!(window.matchMedia&&matchMedia("(pointer: coarse)").matches);
+function show(html,cls){
+  overlay.className="on ov-"+(cls||"full");
+  overlay.innerHTML='<div class="panel '+cls+'">'+html+'</div>';
+  const p=overlay.firstElementChild;
+  /* on a phone, focusing a field throws the keyboard over the question before it can be read.
+     Buttons are safe to focus; a text field waits to be tapped. */
+  const f=overlay.querySelector("input,button");
+  if(f&&!(COARSE&&f.tagName==="INPUT")){try{f.focus({preventScroll:true});}catch(e){f.focus();}}
+  if(cls==="dialog"&&COARSE&&window.innerWidth<700)liftAboveThumbs(p);
+  p.scrollTop=0;requestAnimationFrame(()=>{p.scrollTop=0;});
+}
+/* Speech panels stop above the d-pad. The toggle lends them the rest of the screen for the
+   long ones and takes it back afterwards. */
+function liftAboveThumbs(panel){
+  const top=document.getElementById("touch").getBoundingClientRect().top;
+  const gap=clamp(Math.round(window.innerHeight-top+4),8,Math.round(window.innerHeight*0.65));
+  overlay.style.setProperty("--thumbs",gap+"px");
+  overlay.classList.remove("tall");
+  if(panel.scrollHeight<=panel.clientHeight+2)return;   // it all fits, so there is nothing to open out
+  panel.classList.add("expandable");
+  const b=document.createElement("button");
+  b.type="button"; b.className="expand"; b.title="Use the whole screen";
+  b.textContent="\u25B2 MORE";
+  b.onclick=()=>{const tall=overlay.classList.toggle("tall");b.textContent=tall?"\u25BC LESS":"\u25B2 MORE";};
+  panel.appendChild(b);
+}
 function hide(){overlay.className="";overlay.innerHTML="";}
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function speakerBox(name,role){return '<div class="speaker">'+esc(name)+(role?' <span>'+esc(role)+'</span>':'')+'</div>';}
@@ -1927,7 +1964,7 @@ function openObject(o){
 function codePrompt(o){
   S.mode="dialog";
   const name=o.title.split(":")[0];
-  show(speakerBox(name,"locked")+'<p>'+esc(o.lockedText||"Locked. The code is a clause number.")+'</p><div class="row"><input class="clause" id="ans" autocomplete="off" inputmode="decimal" placeholder="e.g. 4.3"><button class="btn primary" id="go">Open</button></div>',"dialog");
+  show(speakerBox(name,"locked")+'<p>'+esc(o.lockedText||"Locked. The code is a clause number.")+'</p><div class="row"><input class="clause" id="ans" autocomplete="off" inputmode="decimal" placeholder="e.g. 4.3"><button class="btn primary" id="go">Open</button></div>'+COMMA_HINT,"dialog");
   const inp=overlay.querySelector("#ans");
   const submit=()=>{
     if(normalize(inp.value)===o.code){
@@ -1945,6 +1982,9 @@ function codePrompt(o){
 }
 
 /* ---------- auditor and clause quiz ---------- */
+/* a Danish number pad offers a comma where a clause has a full stop, and normalize() already
+   treats them as the same character, so say so rather than leave the player guessing */
+const COMMA_HINT='<div class="commahint">The comma on your keyboard counts as a full stop.</div>';
 function normalize(s){return String(s).trim().toLowerCase().replace(/,/g,".").replace(/\s+/g,"").replace(/^clause/,"").replace(/^a\./,"").replace(/\.$/,"");}
 function answerOk(v,q){const n=normalize(v);return n===normalize(q.a)||(q.alt||[]).some(x=>normalize(x)===n);}
 function talkAuditor(){
@@ -1994,7 +2034,7 @@ function auditQuestion(){
   const a=S.audit; const q=a.qs[a.i];
   S.mode="dialog";
   show(speakerBox("Elisabeth","question "+(a.i+1)+" of "+a.qs.length)+(a.deadline?'<div class="delta meh" id="clock"></div>':'')+'<p>'+esc(q.q)+'</p>'+
-    '<div class="row"><input class="clause" id="ans" autocomplete="off" inputmode="'+(q.ph?"text":"decimal")+'" placeholder="'+esc(q.ph||"e.g. 6.1.3")+'"'+(q.ph?' style="width:220px"':'')+'><button class="btn primary" id="go">Answer</button></div>',"dialog");
+    '<div class="row"><input class="clause" id="ans" autocomplete="off" inputmode="'+(q.ph?"text":"decimal")+'" placeholder="'+esc(q.ph||"e.g. 6.1.3")+'"'+(q.ph?' style="width:220px"':'')+'><button class="btn primary" id="go">Answer</button></div>'+(q.ph?'':COMMA_HINT),"dialog");
   if(a.deadline&&!a.timer){a.timer=setInterval(auditClock,250);}
   auditClock();
   const inp=overlay.querySelector("#ans");
@@ -2729,7 +2769,7 @@ function nextObjective(r){
 function numberPrompt(n,sc){
   const o=sc.lookup?room().objects.find(x=>x.id===sc.lookup):null;
   S.mode="dialog";
-  show(speakerBox(n.name,n.role)+'<p>'+esc(sc.number.q)+'</p><div class="row"><input class="clause" id="ans" autocomplete="off" inputmode="'+(sc.number.ph?"text":"decimal")+'" placeholder="'+esc(sc.number.ph||"e.g. 4.3")+'"><button class="btn primary" id="go">Answer</button></div>'+hintButton(),"dialog");
+  show(speakerBox(n.name,n.role)+'<p>'+esc(sc.number.q)+'</p><div class="row"><input class="clause" id="ans" autocomplete="off" inputmode="'+(sc.number.ph?"text":"decimal")+'" placeholder="'+esc(sc.number.ph||"e.g. 4.3")+'"><button class="btn primary" id="go">Answer</button></div>'+(sc.number.ph?'':COMMA_HINT)+hintButton(),"dialog");
   wireHint(()=>o?"It is the item called '"+o.title+"'.":"Think about which clause group this belongs to.");
   const inp=overlay.querySelector("#ans");
   const submit=()=>{
