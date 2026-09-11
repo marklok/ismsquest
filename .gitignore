@@ -2,3 +2,4 @@
 *.backup.html
 node_modules/
 .vercel
+.env*
