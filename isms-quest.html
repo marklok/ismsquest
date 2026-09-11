@@ -445,16 +445,12 @@ const BRIEF={
 
 const BASELINE={
   speaker:{name:"Kick-off meeting",role:"Monday 09:00"},
-  text:"The CEO opens: 'We need that certificate. How are you going to build this?' Pick your baseline approach for the ISMS.",
+  text:"The CEO opens: 'We need that certificate. How are you going to build this?'",
   options:[
-    {t:"Scope, risk assessment, risk treatment, then justify every Annex A control in the SoA. 27002 for the how.",pts:10,trust:10,risk:-15,
-     fb:"The path the standard prescribes. 4.3 sets the scope, 6.1.2 assesses risk, 6.1.3 picks treatment and compares the controls with Annex A, and the SoA (6.1.3 d) records inclusions, exclusions and reasons. 27002 is the how, not a checklist."},
-    {t:"Start from Annex A. Implement all 93 controls, then write the risk assessment afterwards so every control has a matching risk.",pts:-5,trust:-5,risk:-5,
-     fb:"Annex A is a reference list, not a to-do list. 6.1.3 b derives controls from risk treatment, 6.1.3 c checks them against Annex A. Risks written backwards from controls is the standard in reverse, and the auditor will ask why each control applies."},
-    {t:"Scope only the client portal and the IT team, where the sensitive data sits. Consultants at client sites are covered by the client's ISMS.",pts:-5,trust:0,risk:10,
-     fb:"4.3 asks for interfaces and dependencies inside and outside the scope. Client data lives on 140 travelling laptops, and the client's ISMS does not cover your people. A portal-only certificate will not satisfy the public-sector clients."},
-    {t:"Reuse the SoA and policies from your previous employer, swap the company name, and fix the risk register at the first internal audit.",pts:-10,trust:-10,risk:10,
-     fb:"A copied SoA has no link to this organisation's context (4.1), interested parties (4.2) or risks (6.1.2). Auditors spot this quickly. The whole standard is built on your own risk assessment producing your own controls."}
+    {t:"Risks first. Scope it, assess the risks, then pick the controls that answer them.",pts:10,trust:10,risk:-15,
+     fb:"The order the standard prescribes. 4.3 sets the scope, 6.1.2 assesses risk, 6.1.3 chooses the treatment and compares it with Annex A, and the SoA records what is in, what is out and why. 27002 tells you how, once you know which controls you need."},
+    {t:"Controls first. Roll out all 93 Annex A controls, then write risks to match.",pts:-5,trust:-5,risk:-5,
+     fb:"Annex A is a reference list, not a to-do list. 6.1.3 b derives controls from the risk treatment and 6.1.3 c checks them against Annex A, in that order. Work backwards and every control needs a risk invented to justify it, which is the first thing an auditor unpicks."}
   ]
 };
 
@@ -1761,7 +1757,7 @@ function showInstructions(){
     '<li><b>The garden (Annex A):</b> a short investigation. Somebody called Sven exported the risk register on Thursday. Search the four houses, inspect what you find, show it to people, and build the chain on the case board by the pond: authorization, identity, physical entry, system access, detection. Then name the control that would have broken each link.</li>'+
     '<li><b>Certification audit:</b> eight random questions from the whole game, six right, against the clock, and the gate. Then your initials go on the scoreboard.</li></ul>'+
     '<h2>Hearts and mandate</h2><p>Three hearts. Risk at 100 means an incident and one heart gone. At zero the board pulls the plug and the room restarts. Trust at 80 or above is a full mandate: good answers count double.</p>'+
-    '<h2>Two rooms with a twist</h2><p>The ops centre is dark: find the flashlight, then the three loose pages, and deliver each to its owner. The technological annex runs on a five-minute clock, and the engineers reset the room when it runs out. In the server room a catch costs a heart and sends you back to the door with your tokens.</p>'+
+    '<h2>Two rooms with a twist</h2><p>The ops centre is dark: find the flashlight, then the three loose pages, and deliver each to its owner. In the server room a catch costs a heart and sends you back to the door, but your tokens stay with you.</p>'+
     '<h2>Saving, hints, incidents</h2><p>You start by entering three initials, arcade style. Progress is saved in this browser after every room and every answer, and Continue picks up at the door of the room you were in. Finish the game and your initials, score, stars and time go on the scoreboard. Finish a room with risk at 25 or below and you earn a hint token, spent on any question to reveal the anchor line. Let risk climb above 75 and an incident lands on your desk mid-room. Below 40 trust, Henrik will not sign the policy. Numbers you get wrong come back in the final audit, where getting them right recovers half of what they cost.</p>'+
     '<h2>Side quests</h2><p>A badge reader before the server room, an unattended laptop in the boardroom, a company laptop to return after the fight. Each is a control, each is worth points.</p>'+
     '<h2>Scoring</h2><p>Good answers +10, wrong ones cost. Reading an item +2. Clause numbers +5, misses -3. Beat the par time and get +10. After every room a debrief shows your score, your time, and the clauses you walked past, in order. Trust and risk decide the ending with the score.</p>'+
