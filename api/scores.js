@@ -4,11 +4,12 @@
  * POST /api/scores  -> one run, validated and stored
  *
  * Storage is an Upstash Redis sorted set, reached over its REST API so this file
- * needs no dependencies and no build step. Two environment variables are required,
- * and the Upstash integration on Vercel sets both for you:
+ * needs no dependencies, no SDK and no build step. It needs a REST endpoint and a
+ * token, under either of the two names the Vercel integration uses depending on how
+ * the store was added:
  *
- *   UPSTASH_REDIS_REST_URL
- *   UPSTASH_REDIS_REST_TOKEN
+ *   UPSTASH_REDIS_REST_URL  or  KV_REST_API_URL
+ *   UPSTASH_REDIS_REST_TOKEN  or  KV_REST_API_TOKEN
  *
  * Nothing here is a security boundary. Anyone can post to this endpoint with curl,
  * so the checks below exist to keep the board readable, not to prove a score was
@@ -44,9 +45,9 @@ const BLOCKED = new Set([
 ]);
 
 async function redis(...command) {
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!url || !token) throw new Error("upstash environment variables are not set");
+  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+  if (!url || !token) throw new Error("no upstash REST url or token in the environment");
   const res = await fetch(url, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
