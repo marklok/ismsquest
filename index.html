@@ -156,6 +156,7 @@
   @media (max-width:699px) and (pointer: coarse){
     #overlay.on.ov-dialog{padding-bottom:var(--thumbs,8px)}
     #overlay.on.ov-dialog.tall{padding-bottom:8px}
+    #overlay.on.ov-dialog.asks{align-items:flex-start;padding-bottom:8px}
     .panel.expandable{padding-top:30px}
   }
   @media (min-width:700px){ #touch{display:none} }
@@ -1575,6 +1576,9 @@ function show(html,cls){
 /* Speech panels stop above the d-pad. The toggle lends them the rest of the screen for the
    long ones and takes it back afterwards. */
 function liftAboveThumbs(panel){
+  /* A panel carrying a field goes to the top instead. The keyboard takes the bottom half of
+     the screen when the field is tapped, and the question has to stay readable beside it. */
+  if(panel.querySelector("input")){overlay.classList.add("asks");return;}
   const top=document.getElementById("touch").getBoundingClientRect().top;
   const gap=clamp(Math.round(window.innerHeight-top+4),8,Math.round(window.innerHeight*0.65));
   overlay.style.setProperty("--thumbs",gap+"px");
