@@ -1625,14 +1625,19 @@ function iniStart(){
 }
 /* ---------- scoreboard: local by default, one endpoint away from online ---------- */
 const SCORES_KEY="isms-quest.scores";
-const SCORE_API="";   // set to an https endpoint when the game goes online: GET returns the list, POST takes one entry
+const SCORE_API="/api/scores";   // same origin, so no CORS: GET returns the list, POST takes one run
 function loadScores(){ try{const l=JSON.parse(localStorage.getItem(SCORES_KEY)||"[]");return Array.isArray(l)?l:[];}catch(e){return [];} }
 function sortScores(l){return l.sort((a,b)=>b.score-a.score||(a.time||0)-(b.time||0));}
 function recordScore(e){
   const l=sortScores(loadScores().concat([e])).slice(0,50);
   try{localStorage.setItem(SCORES_KEY,JSON.stringify(l));}catch(x){}
-  if(SCORE_API){try{fetch(SCORE_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(e)}).catch(()=>{});}catch(x){}}
-  return {list:l,rank:l.indexOf(e)+1};
+  /* the local list answers immediately; the server answers when it answers, and if it
+     never does the player still sees their run and their standing in this browser */
+  let posted=null;
+  if(SCORE_API){
+    try{posted=fetch(SCORE_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(e)}).then(r=>r.ok?r.json():null).catch(()=>null);}catch(x){}
+  }
+  return {list:l,rank:l.indexOf(e)+1,posted};
 }
 function fetchScores(){
   if(!SCORE_API)return Promise.resolve(loadScores());
@@ -1644,7 +1649,7 @@ function scoreTable(list,n,me){
     list.slice(0,n).map((e,i)=>'<tr'+(me&&e.ini===me.ini&&e.score===me.score&&e.time===me.time?' class="me"':'')+'><td>'+(i+1)+'</td><td class="ini">'+esc(e.ini||"???")+'</td><td>'+(e.score|0)+'</td><td>'+(e.stars|0)+'</td><td>'+fmtT(e.time||0)+'</td><td>'+esc(e.date||"")+'</td></tr>').join("")+'</table>';
 }
 function showScores(back,me){
-  show('<h1>Scoreboard</h1><p class="muted">Top ten runs in this browser'+(SCORE_API?' and online':'')+'. Score first, then the faster time.</p><div id="sb">'+scoreTable(loadScores(),10,me)+'</div>'+
+  show('<h1>Scoreboard</h1><p class="muted">'+(SCORE_API?'The ten best runs so far.':'Top ten runs in this browser.')+' Score first, then the faster time.</p><div id="sb">'+scoreTable(loadScores(),10,me)+'</div>'+
     '<div class="row"><button class="btn primary" id="back">Back</button></div>',"full");
   overlay.querySelector("#back").onclick=()=>{sfx("select");back();};
   if(SCORE_API)fetchScores().then(l=>{const t=overlay.querySelector("#sb");if(t)t.innerHTML=scoreTable(l,10,me);});
@@ -2306,7 +2311,8 @@ function showEnd(){
   if(!S.scored){
     S.scored=true; sfx("clear");
     S.entry={ini:S.initials,score:S.score,max,pct:Math.round(pct*100),trust:S.trust,risk:S.risk,stars,time:S.playSec,date:new Date().toISOString().slice(0,10)};
-    S.rank=DEV.on?0:recordScore(S.entry).rank;
+    if(DEV.on){S.rank=0;S.posted=null;}
+    else{const r=recordScore(S.entry);S.rank=r.rank;S.posted=r.posted;}
   }
   show('<h1 style="text-align:center">You completed ISMS Quest!</h1><div class="ini-big">'+esc(S.initials)+'</div>'+
     '<h2>'+esc(title)+'</h2><p>'+esc(body)+'</p>'+extra+
@@ -2315,13 +2321,17 @@ function showEnd(){
     '<div>Time played</div><div>'+fmtT(S.playSec)+'</div><div>Rooms cleared</div><div>'+cleared+' of '+ROOMS.length+'</div>'+
     '<div>Answers</div><div>'+right+' good of '+S.log.length+'</div><div>Hearts left</div><div>'+Math.max(0,S.hearts)+' of '+MAX_HEARTS+'</div>'+
     '<div>Trust</div><div>'+S.trust+'</div><div>Risk</div><div>'+S.risk+'</div>'+
-    '<div>Scoreboard</div><div class="'+(S.rank?'good-t':'muted')+'">'+(S.rank?'#'+S.rank+' in this browser':'not recorded, dev mode')+'</div></div>'+
-    '<h2>Scoreboard</h2>'+scoreTable(loadScores(),5,S.entry)+
+    '<div>Scoreboard</div><div id="rankline" class="'+(S.rank?'good-t':'muted')+'">'+(S.rank?'#'+S.rank+' in this browser':'not recorded, dev mode')+'</div></div>'+
+    '<h2>Scoreboard</h2><div id="sbEnd">'+scoreTable(loadScores(),5,S.entry)+'</div>'+
     '<details><summary>Your decisions</summary>'+logHtml()+'</details>'+
     '<div class="row"><button class="btn primary" id="again">Play again</button><button class="btn" id="sc">Full scoreboard</button><button class="btn" id="nb">Open notebook</button></div>',"full");
   overlay.querySelector("#again").onclick=()=>location.reload();
   overlay.querySelector("#sc").onclick=()=>{sfx("select");showScores(showEnd,S.entry);};
   overlay.querySelector("#nb").onclick=()=>showNotebook(showEnd);
+  if(SCORE_API&&!DEV.on){
+    fetchScores().then(l=>{const t=overlay.querySelector("#sbEnd");if(t)t.innerHTML=scoreTable(l,5,S.entry);});
+    if(S.posted)S.posted.then(r=>{const el=overlay.querySelector("#rankline");if(el&&r&&r.rank)el.textContent="#"+r.rank+" on the board";});
+  }
 }
 
 /* ---------- notebook ---------- */
