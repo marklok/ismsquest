@@ -24,6 +24,7 @@
   #hud .hearts{color:var(--red);font-size:16px;letter-spacing:2px;margin-left:auto;text-shadow:2px 2px 0 #0e0d18}
   #hud .key{margin-left:auto} #hud .item{color:var(--paper)}
   #hud .mandate{color:var(--gold);margin-left:6px}
+  #hud .mandate:empty{display:none;margin:0}   /* an empty badge should not spend a flex gap */
   #hud .snd{grid-column:1;grid-row:2;display:flex;gap:4px;align-self:start}
   #hud .snd button{flex:1;font-family:'Press Start 2P','Courier New',monospace;font-size:7px;line-height:1;background:transparent;color:var(--gold);border:2px solid var(--panel-edge);padding:4px 5px;box-shadow:none;cursor:pointer}
   #hud .snd button.off{color:var(--muted);text-decoration:line-through}
@@ -83,6 +84,10 @@
   .menu button:hover,.menu button:focus-visible{color:var(--gold);border-color:var(--gold);outline:0}
   .menu .hiscore{display:block;width:220px;margin:0 auto 8px;padding:7px 6px;background:rgba(27,26,46,.85);border:3px solid #6a5a2a;font-family:'Press Start 2P','Courier New',monospace;font-size:9px;line-height:1;color:var(--muted)}
   .menu .hiscore b{color:var(--gold)}
+  .menu .credit{font-family:'Press Start 2P','Courier New',monospace;font-size:7px;color:#6c6f8f;margin:9px auto 0}
+  .menu .subtitle{font-family:'Press Start 2P','Courier New',monospace;font-size:11px;color:#7cc0ff;margin:0 auto 7px;text-shadow:2px 2px 0 #0e0d18}
+  .menu .tagline{font-family:'Press Start 2P','Courier New',monospace;font-size:7px;line-height:1.9;color:var(--muted);max-width:230px;margin:0 auto 8px;text-shadow:1px 1px 0 #0e0d18;animation:attract 1.8s steps(1,end) infinite}
+  @keyframes attract{0%,62%{opacity:1}63%,100%{opacity:.3}}
   .menu button:hover::before,.menu button:focus-visible::before{content:"\25B6";position:absolute;left:12px;color:var(--gold)}
   .stars{color:var(--gold);letter-spacing:2px} .stars .off{color:#3a3a4a}
   ol.journey{padding-left:22px;margin:0 0 10px} ol.journey li{margin-bottom:6px} .journey .cl{color:var(--gold);font-family:'Press Start 2P','Courier New',monospace;font-size:9px;margin-right:4px}
@@ -105,8 +110,40 @@
   .anchors .cl{font-family:'Press Start 2P','Courier New',monospace;font-size:9px;margin-right:6px}
   .anchors details{margin:4px 0 0 24px}
   .muted{color:var(--muted)}
+  .ctl.touch{display:none}
+  /* Phones: the status panel becomes three tidy rows, the controls sit together on the first,
+     and the menu gives the artwork back the middle of the screen. */
+  @media (max-width:699px){
+    #app{padding:6px 6px 18px}
+    #hud{gap:5px 8px;padding:6px 8px;font-size:9px;line-height:1.5}
+    #hud>button{grid-column:1;grid-row:1;align-self:center;font-size:10px;padding:6px 10px 6px 7px}
+    #hud .snd{grid-column:2;grid-row:1;justify-self:end;align-self:center}
+    #hud .snd button{font-size:8px;padding:5px 7px}
+    #hud div.line:nth-of-type(1){grid-column:1 / -1;grid-row:2}
+    #hud div.line:nth-of-type(2){grid-column:1 / -1;grid-row:3}
+    #hud .line{gap:6px}
+    #hud .bar{width:34px;height:10px}
+    #hud .hearts{font-size:12px;letter-spacing:1px}
+    .panel.menu{bottom:10px}
+    .menu button{width:190px;font-size:9px;padding:6px 6px;margin:2px auto;border-width:2px}
+    .menu .hiscore{width:190px;font-size:8px;padding:5px 4px;margin-bottom:6px;border-width:2px}
+    .menu .subtitle{font-size:9px;margin-bottom:5px}
+    .menu .tagline{font-size:7px;line-height:1.7;margin-bottom:6px}
+    .menu .credit{display:none}   /* a phone canvas has no room for the joke line */
+    .panel h1{font-size:12px}
+    .panel h2{font-size:9px}
+    .opts button,.btn{font-size:17px}
+    #help{font-size:15px;padding:7px 9px}
+    #msg{font-size:9px}
+    .ctl{display:none} .ctl.touch{display:block}
+    .ini-slot .ch{font-size:26px;width:48px;height:48px;line-height:48px}
+    .ini-slot span{font-size:18px}
+    .ini-row{gap:12px;margin:8px 0 4px}
+    .panel p{font-size:17px;margin-bottom:8px}
+    .panel.full{inset:6px}
+  }
   @media (min-width:700px){ #touch{display:none} }
-  @media (prefers-reduced-motion:reduce){ #hud .bar i{transition:none} }
+  @media (prefers-reduced-motion:reduce){ #hud .bar i{transition:none} .menu .tagline{animation:none} }
 </style>
 </head>
 <body>
@@ -134,7 +171,7 @@
     <button id="btnA" type="button">A</button>
   </div>
   <audio id="theme" src="assets/crystal-map.mp3" loop preload="auto"></audio>
-  <div id="help"><div id="msg">&nbsp;</div><div class="ctl">Move: arrow keys or WASD. Talk, read, swing laptop: Space or E. Notebook: N. Answer with 1 to 4.</div></div>
+  <div id="help"><div id="msg">&nbsp;</div><div class="ctl">Move: arrow keys or WASD. Talk, read, swing laptop: Space or E. Notebook: N. Answer with 1 to 4.</div><div class="ctl touch">Move: the d-pad. Talk, read, swing laptop: the A button. Notebook: the button above the screen. Answer: tap an option.</div></div>
   <div id="dev" hidden><b>DEV</b>
     <select id="devRoom"></select>
     <button type="button" id="devJump">Jump to room</button>
@@ -1546,7 +1583,9 @@ function showTitle(){
   S.mode="title"; musicPlay("title");
   const saved=loadGame();
   const hs=loadScores()[0];
-  show((hs?'<div class="hiscore">HIGH SCORE <b>'+hs.score+' '+esc(hs.ini)+'</b></div>':'')+(saved?'<button type="button" id="cont">Continue'+(saved.ini?' ('+esc(saved.ini)+')':'')+'</button>':'')+'<button type="button" id="play">'+(saved?"New game":"Play")+'</button><button type="button" id="scores">Scoreboard</button><button type="button" id="instr">Instructions</button>'+(DEV.on?'<button type="button" id="test">Test a room</button>':''),"menu");
+  show('<div class="subtitle">THE LEAD IMPLEMENTER</div>'+
+    '<div class="tagline">ISO/IEC 27001:2022 &middot; ANNEX A</div>'+
+    (hs?'<div class="hiscore">HIGH SCORE <b>'+hs.score+' '+esc(hs.ini)+'</b></div>':'')+(saved?'<button type="button" id="cont">Continue'+(saved.ini?' ('+esc(saved.ini)+')':'')+'</button>':'')+'<button type="button" id="play">'+(saved?"New game":"Play")+'</button><button type="button" id="scores">Scoreboard</button><button type="button" id="instr">Instructions</button>'+(DEV.on?'<button type="button" id="test">Test a room</button>':'')+'<div class="credit">A CHAOTIC CONSULTING PRODUCTION</div>',"menu");
   if(saved)overlay.querySelector("#cont").onclick=()=>{sfx("select");restoreGame(saved);};
   overlay.querySelector("#play").onclick=()=>{sfx("select");showInitials();};
   overlay.querySelector("#scores").onclick=()=>{sfx("select");showScores(showTitle);};
@@ -1562,7 +1601,7 @@ function showInitials(){
   let last="AAA"; try{last=(localStorage.getItem(INI_KEY)||"AAA").toUpperCase();}catch(e){}
   ini={c:last.split("").filter(ch=>ALPHA.includes(ch)).slice(0,3),p:0}; while(ini.c.length<3)ini.c.push("A");
   const slots=[0,1,2].map(i=>'<div class="ini-slot" data-i="'+i+'"><span data-d="1">&#9650;</span><div class="ch"></div><span data-d="-1">&#9660;</span></div>').join("");
-  show('<h1 style="text-align:center">Enter your initials</h1><p class="muted" style="text-align:center">Three letters, arcade style. Arrow keys to pick, Enter to start. Or just type them.</p><div class="ini-row">'+slots+'</div>'+
+  show('<h1 style="text-align:center">Enter your initials</h1><p class="muted" style="text-align:center">Three letters, arcade style. Pick with the arrows, or type them.</p><div class="ini-row">'+slots+'</div>'+
     '<div class="row" style="justify-content:center"><button class="btn primary" id="go">Start</button><button class="btn" id="back">Back</button></div>',"full");
   overlay.querySelectorAll(".ini-slot").forEach(el=>{
     el.querySelector(".ch").onclick=()=>{ini.p=+el.dataset.i;paintIni();};
@@ -2089,7 +2128,7 @@ function coinQuestion(){
 }
 
 /* ---------- Firewall Invaders: the hacker in the corner office ---------- */
-const FW={left:24,right:488,top:74,wallY:290,wallW:72,lapY:318,bad:12,good:10};
+const FW={left:24,right:488,top:100,wallY:290,wallW:72,lapY:318,bad:12,good:10};
 function hackerTalk(n){
   simple(n.name,n.role,n.idle,"Block him",()=>{
     S.mode="dialog";
@@ -2143,10 +2182,11 @@ function drawFirewall(){
   R(0,0,cv.width,cv.height,"#1b1a2e"); R(8,8,496,368,"#3a3a4a"); R(14,14,484,356,"#071019");
   if(f.flash>0&&(S.t>>1)%2)R(14,14,484,356,"#3a1020");
   for(let y=FW.top;y<FW.lapY;y+=16)R(FW.left,y,FW.right-FW.left,1,"#0d1c2a");
+  R(FW.left,FW.top-6,FW.right-FW.left,2,"#12283a");
   for(let y=14;y<370;y+=4)R(14,y,484,1,"rgba(0,0,0,.18)");
-  drawText("FIREWALL INVADERS",22,46,"#f2c14e",10);
-  drawText("PKT "+f.i+"/"+f.seq.length+"  BLOCKED "+f.blocked+"  DROPPED "+f.dropped,232,46,"#a9a6c9",8);
-  drawText("CATCH RED",22,62,"#ef6f6c",8); drawText("LET GREEN PASS",122,62,"#5fcf80",8);
+  drawText("FIREWALL INVADERS",22,48,"#f2c14e",10);
+  drawText("CATCH RED",22,72,"#ef6f6c",12); drawText("LET GREEN PASS",150,72,"#5fcf80",12);
+  drawText("PKT "+f.i+"/"+f.seq.length+"  BLOCKED "+f.blocked+"  DROPPED "+f.dropped,22,90,"#a9a6c9",10);
   f.pk.forEach(p=>{
     const c=p.bad?"#ef6f6c":"#5fcf80"; R(p.x-1,p.y-1,18,14,OUT); R(p.x,p.y,16,12,c);
     if(p.bad){R(p.x+4,p.y+3,2,2,OUT);R(p.x+10,p.y+3,2,2,OUT);R(p.x+6,p.y+5,4,2,OUT);R(p.x+4,p.y+7,2,2,OUT);R(p.x+10,p.y+7,2,2,OUT);}
@@ -2156,7 +2196,7 @@ function drawFirewall(){
   for(let r=0;r<2;r++)for(let c=-1;c<7;c++){const bx=f.px+c*12+(r?6:0), x0=Math.max(bx,f.px), x1=Math.min(bx+11,f.px+FW.wallW); if(x1>x0)R(x0,FW.wallY+r*7,x1-x0,6,r?"#d9702f":"#e07b39");}
   R(150,FW.lapY,212,4,"#5e5e5e"); R(160,FW.lapY+4,192,26,"#3a3a3a"); R(170,FW.lapY+8,172,18,f.hp>0?"#123a2a":"#3a1020");
   for(let i=0;i<3;i++)drawHeart(232+i*20,FW.lapY+11,i<f.hp);
-  drawText("HENRIK'S LAPTOP",196,FW.lapY+46,"#a9a6c9",8);
+  drawText("HENRIK'S LAPTOP",181,FW.lapY+48,"#a9a6c9",10);
 }
 
 /* ---------- boss fight ---------- */
@@ -3017,9 +3057,9 @@ function drawDark(px,py,rad){
 function drawText(txt,x,y,c,size){ctx.font=(size||10)+"px 'Press Start 2P','Courier New',monospace";ctx.fillStyle="#1b1a2e";ctx.fillText(txt,x+1,y+1);ctx.fillStyle=c;ctx.fillText(txt,x,y);}
 /* top centre is the one strip free in every mode: hearts sit left, the boss bar right */
 function drawScorePlate(){
-  const txt="SCORE "+S.score, w=txt.length*8+14, x=Math.round((cv.width-w)/2);
-  R(x,4,w,18,"rgba(27,26,46,.82)"); R(x,4,w,1,"#3a3a4a"); R(x,21,w,1,"#3a3a4a");
-  drawText(txt,x+7,17,"#f2c14e",8);
+  const txt="SCORE "+S.score, w=txt.length*10+16, x=Math.round((cv.width-w)/2);
+  R(x,4,w,22,"rgba(27,26,46,.82)"); R(x,4,w,2,"#3a3a4a"); R(x,24,w,2,"#3a3a4a");
+  drawText(txt,x+8,19,"#f2c14e",10);
 }
 function drawHeart(x,y,on){const c=on?"#ef6f6c":"#3a3a4a";R(x+2,y,4,2,c);R(x+8,y,4,2,c);R(x,y+2,14,4,c);R(x+2,y+6,10,2,c);R(x+4,y+8,6,2,c);R(x+6,y+10,2,2,c);}
 function render(){
@@ -3066,9 +3106,9 @@ function render(){
   if(rm.clock&&!rm.open&&S.rs&&S.mode!=="title"){const left=Math.max(0,rm.clock-(Date.now()-S.rs.start)/1000);R(cv.width-78,6,72,18,"rgba(27,26,46,.85)");drawText(fmtT(left),cv.width-70,19,left<=30&&(S.t>>4)%2?"#ef6f6c":"#f2c14e",10);}
   if(!["title","brief","initials","end"].includes(S.mode))drawScorePlate();
   if(S.banner&&S.t<S.banner.until){
-    const lines=wrap(S.banner.text,60); const hgt=12+lines.length*14;
-    R(0,40,cv.width,hgt,"rgba(27,26,46,.92)");R(0,40,cv.width,2,"#f2c14e");R(0,40+hgt-2,cv.width,2,"#f2c14e");
-    lines.forEach((l,i)=>drawText(l,8,56+i*14,"#f2c14e",8));
+    const lines=wrap(S.banner.text,46); const hgt=14+lines.length*17;
+    R(0,36,cv.width,hgt,"rgba(27,26,46,.92)");R(0,36,cv.width,2,"#f2c14e");R(0,36+hgt-2,cv.width,2,"#f2c14e");
+    lines.forEach((l,i)=>drawText(l,10,55+i*17,"#f2c14e",10));
   }else if(S.banner&&S.t>=S.banner.until){S.banner=null;}
   if(S.mode==="title")drawTitle();
 }
@@ -3079,8 +3119,10 @@ function drawTitle(){
   R(0,0,cv.width,cv.height,"rgba(10,9,24,.6)");
   for(let y=0;y<cv.height;y+=4)R(0,y,cv.width,1,"rgba(0,0,0,.12)");
   const t=S.t; ctx.textAlign="center";
-  ctx.font="44px 'Press Start 2P','Courier New',monospace";
-  const cx=cv.width/2, cy=118;
+  /* a phone gives the canvas about 270 real pixels, so the logo shrinks and rides higher
+     to leave the menu the room it needs underneath */
+  const small=cv.clientWidth>0&&cv.clientWidth<430, cx=cv.width/2, cy=small?80:118;
+  ctx.font=(small?34:44)+"px 'Press Start 2P','Courier New',monospace";
   ctx.fillStyle="#1b1a2e";ctx.fillText("ISMS QUEST",cx+8,cy+8);
   ctx.fillStyle="#7a2f2f";ctx.fillText("ISMS QUEST",cx+5,cy+5);
   ctx.fillStyle="#c0392b";ctx.fillText("ISMS QUEST",cx+3,cy+3);
@@ -3088,10 +3130,6 @@ function drawTitle(){
   ctx.fillStyle="#fff3c4";ctx.fillText("ISMS QUEST",cx-1,cy-2);
   ctx.fillStyle="#f2c14e";ctx.fillText("ISMS QUEST",cx,cy);
   ctx.font="10px 'Press Start 2P','Courier New',monospace";
-  ctx.fillStyle="#1b1a2e";ctx.fillText("THE LEAD IMPLEMENTER",cx+1,cy+31);ctx.fillStyle="#7cc0ff";ctx.fillText("THE LEAD IMPLEMENTER",cx,cy+30);
-  ctx.font="8px 'Press Start 2P','Courier New',monospace";
-  if((t>>5)%2===0){ctx.fillStyle="#a9a6c9";ctx.fillText("ISO/IEC 27001:2022  CLAUSES 4 TO 10  ANNEX A",cx,cy+52);}
-  ctx.fillStyle="#6c6f8f";ctx.fillText("A CHAOTIC CONSULTING PRODUCTION",cx,cv.height-30);
   ctx.textAlign="left";
 }
 function loop(){update();render();requestAnimationFrame(loop);}
