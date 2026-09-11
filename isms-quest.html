@@ -1820,7 +1820,7 @@ function choose(i){
     ?'<div class="fb"><b class="line">'+esc(c.sc.line)+'</b></div><details'+(good?'':' open')+'><summary>Why?</summary><div class="fb">'+esc(o.fb)+'</div></details>'
     :'<div class="fb">'+esc(o.fb)+'</div>';
   show(speakerBox(who,"")+
-    '<div class="delta '+cls+'">'+verdict+' Score '+fmt(pts)+(mandate?' (mandate x2)':'')+', Trust '+fmt(o.trust)+', Risk '+fmt(o.risk)+'</div>'+
+    '<div class="delta '+cls+'">'+verdict+' Score '+fmt(pts)+(mandate?' (mandate x2)':'')+', Trust '+fmt(o.trust)+', Risk '+fmt(riskUp(o.risk))+'</div>'+
     fbHtml+
     '<div class="row"><button class="btn primary" id="go">Continue</button></div>',c.npc||c.after?"dialog":"full");
   overlay.querySelector("#go").onclick=()=>{hide(); checkIncident(()=>{ if(c.after){c.after(good);} else if(!c.npc&&!c.sc.speaker.role.startsWith("Server")){enterRoom(0);} else {S.mode=playMode();hud();} });};
@@ -1923,8 +1923,11 @@ function talkAuditor(){
     intro=qs.length>=4?"Room audit. Four numbers, two from this room, two from earlier rooms. Three right opens the door.":"Room audit. Three clause numbers, two right opens the door.";
     if(qs.length<4)qs=shuffle(r.audit).slice(0,3);
   }
-  S.audit={qs,i:0,correct:0,need,deadline:r.timeLimit?Date.now()+r.timeLimit*1000:null,timer:null};
-  simple("Elisabeth","Certification auditor",intro+" Type the number, for example 6.1.3.","Start",auditQuestion);
+  S.audit={qs,i:0,correct:0,need,limit:r.timeLimit||0,deadline:null,timer:null};
+  simple("Elisabeth","Certification auditor",intro+" Type the number, for example 6.1.3.","Start",()=>{
+    const a=S.audit; if(a&&a.limit)a.deadline=Date.now()+a.limit*1000;   // the clock really does start here
+    auditQuestion();
+  });
 }
 function auditClock(){
   const a=S.audit; if(!a||!a.deadline)return;
@@ -2076,15 +2079,23 @@ function coinQuestion(){
 }
 
 /* ---------- Firewall Invaders: the hacker in the corner office ---------- */
-const FW={left:24,right:488,top:44,wallY:290,wallW:72,lapY:318,bad:12,good:10};
+const FW={left:24,right:488,top:58,wallY:290,wallW:72,lapY:318,bad:12,good:10};
 function hackerTalk(n){
-  simple(n.name,n.role,n.idle,"Block him",()=>startFirewall());
+  simple(n.name,n.role,n.idle,"Block him",()=>{
+    S.mode="dialog";
+    show(speakerBox("Firewall Invaders","one level")+
+      '<div class="info"><p>Packets are dropping towards Henrik\'s laptop. You are the firewall.</p>'+
+      '<p><b class="bad-t">Catch the red ones.</b> Those are the attack. Three of them reach the laptop and it is over.</p>'+
+      '<p><b class="good-t">Let the green ones pass.</b> Those are legitimate traffic. Block them and you are the reason nobody can send an invoice.</p></div>'+
+      '<div class="fb">Arrow keys, or the d-pad under the screen, slide the firewall left and right.</div>'+
+      '<div class="row"><button class="btn primary" id="go">Start</button></div>',"full");
+    overlay.querySelector("#go").onclick=()=>{hide();startFirewall();};
+  });
 }
 function startFirewall(){
   const seq=shuffle(Array(FW.bad).fill(true).concat(Array(FW.good).fill(false)));
   S.fw={seq,i:0,spawnT:50,pk:[],px:220,hp:3,blocked:0,dropped:0,passed:0,flash:0,done:false};
   S.keys.clear(); S.mode="fw"; hud();
-  S.banner={text:"Firewall Invaders. Arrows: move the firewall. Block the red packets, let the green ones reach the laptop.",until:S.t+300};
 }
 function fwUpdate(){
   const f=S.fw; if(!f||f.done)return;
@@ -2112,7 +2123,7 @@ function fwEnd(win){
     overlay.querySelector("#go").onclick=()=>{hide();S.fw=null;S.mode="play";hud();};
   }else{
     S.score-=3; bump(0,5); hud(); sfx("alarm");
-    show(speakerBox("Firewall Invaders","laptop compromised")+'<div class="delta bad">Three packets through. Henrik\'s laptop is a paperweight with a ransom note. -3, Risk +5</div>'+
+    show(speakerBox("Firewall Invaders","laptop compromised")+'<div class="delta bad">Three packets through. Henrik\'s laptop is a paperweight with a ransom note. -3, Risk +'+riskUp(5)+'</div>'+
       '<p>Blocked '+f.blocked+', dropped '+f.dropped+'. Again: the red ones are the problem, the green ones are the business.</p><div class="row"><button class="btn primary" id="go">Try again</button></div>',"dialog");
     overlay.querySelector("#go").onclick=()=>{hide();checkIncident(()=>startFirewall());};
   }
@@ -2123,8 +2134,9 @@ function drawFirewall(){
   if(f.flash>0&&(S.t>>1)%2)R(14,14,484,356,"#3a1020");
   for(let y=FW.top;y<FW.lapY;y+=16)R(FW.left,y,FW.right-FW.left,1,"#0d1c2a");
   for(let y=14;y<370;y+=4)R(14,y,484,1,"rgba(0,0,0,.18)");
-  drawText("FIREWALL INVADERS",22,34,"#f2c14e",10);
-  drawText("PKT "+f.i+"/"+f.seq.length+"  BLOCKED "+f.blocked+"  DROPPED "+f.dropped,232,34,"#a9a6c9",8);
+  drawText("FIREWALL INVADERS",22,30,"#f2c14e",10);
+  drawText("PKT "+f.i+"/"+f.seq.length+"  BLOCKED "+f.blocked+"  DROPPED "+f.dropped,232,30,"#a9a6c9",8);
+  drawText("CATCH RED",22,46,"#ef6f6c",8); drawText("LET GREEN PASS",122,46,"#5fcf80",8);
   f.pk.forEach(p=>{
     const c=p.bad?"#ef6f6c":"#5fcf80"; R(p.x-1,p.y-1,18,14,OUT); R(p.x,p.y,16,12,c);
     if(p.bad){R(p.x+4,p.y+3,2,2,OUT);R(p.x+10,p.y+3,2,2,OUT);R(p.x+6,p.y+5,4,2,OUT);R(p.x+4,p.y+7,2,2,OUT);R(p.x+10,p.y+7,2,2,OUT);}
@@ -2323,10 +2335,12 @@ function showNotebook(back){
 document.getElementById("btnNote").onclick=()=>{ if(S.mode==="play"||S.mode==="boss"||S.mode==="maze"){sfx("select");showNotebook(null);} };
 
 /* ---------- hearts, incidents, game over ---------- */
+/* exposure climbs faster than it falls. Every number shown to the player goes through this too,
+   so the feedback matches what actually lands on the bar. */
+function riskUp(d){return d>0?Math.round(d*1.5):(d||0);}
 function bump(dTrust,dRisk){
   S.trust=clamp(S.trust+(dTrust||0),0,100);
-  if(dRisk>0)dRisk=Math.round(dRisk*1.5);   // exposure climbs faster than it falls
-  S.risk=clamp(S.risk+(dRisk||0),0,100);
+  S.risk=clamp(S.risk+riskUp(dRisk),0,100);
   riskFlags();
 }
 function riskFlags(){
@@ -2540,7 +2554,7 @@ function update(){
 }
 function clockOut(r){
   S.mode="dialog"; sfx("alarm"); S.score-=5; bump(0,10); hud();
-  show(speakerBox("Amira","Dev lead")+'<div class="delta bad">Five minutes. That was the deal. -5, risk +10.</div><p>The engineers put their headphones back on. Come back when you are faster: the annex starts over.</p><div class="row"><button class="btn primary" id="go">Back to the door</button></div>',"full");
+  show(speakerBox("Amira","Dev lead")+'<div class="delta bad">Five minutes. That was the deal. -5, risk +'+riskUp(10)+'.</div><p>The engineers put their headphones back on. Come back when you are faster: the annex starts over.</p><div class="row"><button class="btn primary" id="go">Back to the door</button></div>',"full");
   overlay.querySelector("#go").onclick=()=>{hide();checkIncident(()=>{resetRoom(r);enterRoom(S.roomIdx);});};
 }
 function nearest(){
