@@ -107,3 +107,7 @@ variables:
 
 Without the first two the game still runs: the scoreboard quietly falls back to a list kept
 in the player's own browser.
+
+Vercel Web Analytics needs turning on in the project's Analytics tab; the page requests its
+script only when it is not being served from localhost, so local sessions stay out of the
+figures and out of the console.

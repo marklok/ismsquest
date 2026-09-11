@@ -1702,6 +1702,10 @@ function recordBest(r,stars){ try{const b=bestStars();if((b[r.id]||0)<stars){b[r
    ?dev and ?room switches, the stored flag and the window.ISMS test hook all stay off, and a
    dev run never reaches the scoreboard. */
 const LOCAL=/^(localhost|127\.0\.0\.1|\[::1\]|::1)?$/.test(location.hostname)||location.protocol==="file:";
+/* Vercel Web Analytics. The host serves this path itself, so it only exists once deployed:
+   injecting it rather than writing it into the head keeps a 404 out of the console while
+   working locally, and keeps our own testing out of the numbers. */
+if(!LOCAL){const a=document.createElement("script");a.defer=true;a.src="/_vercel/insights/script.js";document.head.appendChild(a);}
 const DEV=(()=>{
   if(!LOCAL)return {on:false, room:null};
   const p=new URLSearchParams(location.search), h=new URLSearchParams(location.hash.replace(/^#\??/,""));
