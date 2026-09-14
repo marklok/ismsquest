@@ -64,6 +64,11 @@
   .dpad button:active,#btnA:active{background:var(--gold);color:var(--ink)}
   .dpad .e{visibility:hidden}
   #btnA{width:70px;height:70px;border-radius:50%;font-size:14px}
+  #touch .maker{justify-self:center;font-family:'Press Start 2P','Courier New',monospace;font-size:8px;letter-spacing:1px;color:var(--muted);text-decoration:none;padding:16px 12px;text-shadow:1px 1px 0 #0e0d18}
+  #touch .maker:hover,#touch .maker:focus-visible{color:var(--gold);outline:0}
+  #foot{display:flex;gap:22px;justify-content:center;flex-wrap:wrap;margin-top:10px;font-family:'Press Start 2P','Courier New',monospace;font-size:8px;line-height:1.8;color:var(--muted)}
+  #foot a{color:var(--muted);text-decoration:none;border-bottom:2px solid #3b3a5e;padding-bottom:1px}
+  #foot a:hover,#foot a:focus-visible{color:var(--gold);border-color:var(--gold);outline:0}
   #help{background:#1a1930;border:4px solid var(--panel-edge);box-shadow:inset 0 0 0 2px #0e0d18;padding:8px 12px;margin-top:8px;color:var(--muted);font-size:17px}
   #help .saved{color:var(--green);margin-top:5px}
   #msg{font-family:'Press Start 2P','Courier New',monospace;font-size:10px;line-height:1.6;color:var(--gold);min-height:16px;margin-bottom:4px;white-space:pre-wrap}
@@ -137,6 +142,7 @@
     .panel h2{font-size:9px}
     .opts button,.btn{font-size:17px}
     #help{font-size:15px;padding:7px 9px}
+    #foot .made{display:none}   /* on a phone the credit sits between the d-pad and A instead */
     #msg{font-size:9px}
     .ctl{display:none} .ctl.touch{display:block}
     .ini-slot .ch{font-size:26px;width:48px;height:48px;line-height:48px}
@@ -175,11 +181,12 @@
       <button data-k="ArrowLeft">◀</button><button class="e"></button><button data-k="ArrowRight">▶</button>
       <button class="e"></button><button data-k="ArrowDown">▼</button><button class="e"></button>
     </div>
-    <div></div>
+    <a class="maker" href="https://markus.legal" target="_blank" rel="noopener">markus.legal</a>
     <button id="btnA" type="button">A</button>
   </div>
   <audio id="theme" src="assets/crystal-map.mp3" loop preload="auto"></audio>
   <div id="help"><div id="msg">&nbsp;</div><div class="ctl">Move: arrow keys or WASD. Talk, read, swing laptop: Space or E. Notebook: N. Answer with 1 to 4. Pause: P or Escape.</div><div class="ctl touch">Move: the d-pad. Talk, read, swing laptop: the A button. Notebook: the button above the screen. Answer: tap an option. Pause: the PAUSE button.</div><div class="saved">Progress saves in this browser as you play. Close the tab whenever you like and pick up from the title screen.</div></div>
+  <div id="foot"><a href="mailto:contact@markus.legal?subject=ISMS%20Quest%20bug">Report a bug</a><span class="made">A <a href="https://markus.legal" target="_blank" rel="noopener">markus.legal</a> production</span></div>
   <div id="dev" hidden><b>DEV</b>
     <select id="devRoom"></select>
     <button type="button" id="devJump">Jump to room</button>
@@ -2565,6 +2572,7 @@ document.getElementById("btnSfx").onclick=()=>{ sfxOn=!sfxOn; document.getElemen
 const KMAP={w:"ArrowUp",a:"ArrowLeft",s:"ArrowDown",d:"ArrowRight",W:"ArrowUp",A:"ArrowLeft",S:"ArrowDown",D:"ArrowRight"};
 window.addEventListener("keydown",e=>{
   const k=KMAP[e.key]||e.key;
+  if(e.target&&e.target.tagName==="A")return;   // a focused link keeps Enter for itself
   if(e.target&&e.target.closest&&e.target.closest("#dev"))e.target.blur();   // keys belong to the game, not the dev bar
   if((e.key==="Escape"||e.key==="p"||e.key==="P")&&(S.paused||PAUSABLE.includes(S.mode))){togglePause();e.preventDefault();return;}
   if(S.mode==="play"||S.mode==="boss"||S.mode==="maze"){
@@ -2588,6 +2596,8 @@ document.querySelectorAll(".dpad button[data-k]").forEach(b=>{
   const on=e=>{e.preventDefault();S.keys.add(k);}; const off=e=>{e.preventDefault();S.keys.delete(k);};
   b.addEventListener("pointerdown",on);b.addEventListener("pointerup",off);b.addEventListener("pointerleave",off);b.addEventListener("pointercancel",off);
 });
+/* after a click the link would keep focus in this tab, and the next Enter meant for the game would follow it again */
+document.querySelectorAll("#foot a,#touch .maker").forEach(a=>a.addEventListener("click",()=>setTimeout(()=>a.blur(),0)));
 document.getElementById("btnA").addEventListener("pointerdown",e=>{e.preventDefault();if(S.mode==="play"||S.mode==="boss"||S.mode==="maze")action();});
 
 /* ================= logic ================= */
