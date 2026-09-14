@@ -64,9 +64,7 @@
   .dpad button:active,#btnA:active{background:var(--gold);color:var(--ink)}
   .dpad .e{visibility:hidden}
   #btnA{width:70px;height:70px;border-radius:50%;font-size:14px}
-  #touch .maker{justify-self:center;font-family:'Press Start 2P','Courier New',monospace;font-size:8px;letter-spacing:1px;color:var(--muted);text-decoration:none;padding:16px 12px;text-shadow:1px 1px 0 #0e0d18}
-  #touch .maker:hover,#touch .maker:focus-visible{color:var(--gold);outline:0}
-  #foot{display:flex;gap:22px;justify-content:center;flex-wrap:wrap;margin-top:10px;font-family:'Press Start 2P','Courier New',monospace;font-size:8px;line-height:1.8;color:var(--muted)}
+  #foot{display:flex;gap:22px;justify-content:space-between;flex-wrap:wrap;margin-top:10px;padding:0 4px;font-family:'Press Start 2P','Courier New',monospace;font-size:8px;line-height:1.8;color:var(--muted)}
   #foot a{color:var(--muted);text-decoration:none;border-bottom:2px solid #3b3a5e;padding-bottom:1px}
   #foot a:hover,#foot a:focus-visible{color:var(--gold);border-color:var(--gold);outline:0}
   #help{background:#1a1930;border:4px solid var(--panel-edge);box-shadow:inset 0 0 0 2px #0e0d18;padding:8px 12px;margin-top:8px;color:var(--muted);font-size:17px}
@@ -142,7 +140,6 @@
     .panel h2{font-size:9px}
     .opts button,.btn{font-size:17px}
     #help{font-size:15px;padding:7px 9px}
-    #foot .made{display:none}   /* on a phone the credit sits between the d-pad and A instead */
     #msg{font-size:9px}
     .ctl{display:none} .ctl.touch{display:block}
     .ini-slot .ch{font-size:26px;width:48px;height:48px;line-height:48px}
@@ -181,7 +178,7 @@
       <button data-k="ArrowLeft">◀</button><button class="e"></button><button data-k="ArrowRight">▶</button>
       <button class="e"></button><button data-k="ArrowDown">▼</button><button class="e"></button>
     </div>
-    <a class="maker" href="https://markus.legal" target="_blank" rel="noopener">markus.legal</a>
+    <div></div>
     <button id="btnA" type="button">A</button>
   </div>
   <audio id="theme" src="assets/crystal-map.mp3" loop preload="auto"></audio>
@@ -2597,7 +2594,7 @@ document.querySelectorAll(".dpad button[data-k]").forEach(b=>{
   b.addEventListener("pointerdown",on);b.addEventListener("pointerup",off);b.addEventListener("pointerleave",off);b.addEventListener("pointercancel",off);
 });
 /* after a click the link would keep focus in this tab, and the next Enter meant for the game would follow it again */
-document.querySelectorAll("#foot a,#touch .maker").forEach(a=>a.addEventListener("click",()=>setTimeout(()=>a.blur(),0)));
+document.querySelectorAll("#foot a").forEach(a=>a.addEventListener("click",()=>setTimeout(()=>a.blur(),0)));
 document.getElementById("btnA").addEventListener("pointerdown",e=>{e.preventDefault();if(S.mode==="play"||S.mode==="boss"||S.mode==="maze")action();});
 
 /* ================= logic ================= */
