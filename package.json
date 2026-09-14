@@ -4,5 +4,8 @@
   "type": "module",
   "engines": {
     "node": ">=18"
+  },
+  "scripts": {
+    "test": "node test/scores.test.mjs && node test/static.test.mjs"
   }
 }
