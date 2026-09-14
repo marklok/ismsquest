@@ -15,14 +15,32 @@
  * so the checks below exist to keep the board readable, not to prove a score was
  * earned. The ceiling, the initials pattern and the per-address limit between them
  * stop the board being flooded or defaced in an afternoon.
+ *
+ * The rate limiter keys its counters by an HMAC of the caller's address under
+ * SCORE_SALT, so the stored identifier is pseudonymous rather than anonymous: it
+ * cannot be reversed without the secret, but the same address always maps to the
+ * same key while the secret stands. Counters live for an hour. SCORE_SALT is
+ * required for POST; without it the function refuses to record rather than fall
+ * back to a guessable default.
  */
 
-import { createHash } from "node:crypto";
+import { createHmac } from "node:crypto";
 
 const KEY = "ismsquest:scores";
 const KEEP = 500;              // runs retained in Redis
 const RETURN = 25;             // runs handed to the page
 const POSTS_PER_HOUR = 20;     // a full run takes ten minutes or more
+const WINDOW_SECONDS = 3600;
+const UPSTREAM_TIMEOUT_MS = 5000;
+const BOARD_CACHE = "public, s-maxage=5, stale-while-revalidate=30";   // the edge absorbs a burst of readers
+
+/* Count and expire in one atomic step, and repair a counter that somehow has no expiry.
+   Two separate commands could leave a counter that never expires if the second one
+   failed, and an address would then be refused for good once it passed the limit. */
+const COUNT_LUA =
+  "local n = redis.call('INCR', KEYS[1]) " +
+  "if redis.call('TTL', KEYS[1]) < 0 then redis.call('EXPIRE', KEYS[1], ARGV[1]) end " +
+  "return n";
 
 /* A real run tops out near 900 points. The ceilings are loose enough not to reject
    an honest score after the game grows, and tight enough to reject a fabricated one. */
@@ -51,19 +69,21 @@ async function redis(...command) {
   const res = await fetch(url, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify(command)
+    body: JSON.stringify(command),
+    signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS)   // a stalled store fails fast rather than holding the function open
   });
   const body = await res.json().catch(() => null);
   if (!res.ok || !body || body.error) throw new Error((body && body.error) || `upstash ${res.status}`);
   return body.result;
 }
 
-/* The caller's address is only ever seen as a salted digest, and the counter holding
-   it expires after an hour. That is enough to rate limit and keeps no one's address. */
+/* The caller's address is only ever stored as an HMAC under SCORE_SALT, in a counter that
+   expires after an hour. Pseudonymous, not anonymous: see the note at the top. */
 function callerKey(req) {
+  const secret = process.env.SCORE_SALT;
+  if (!secret) throw new Error("SCORE_SALT is not set; refusing to rate limit with a guessable key");
   const forwarded = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
-  const salt = process.env.SCORE_SALT || "ismsquest";
-  return "ismsquest:rl:" + createHash("sha256").update(salt + "|" + (forwarded || "unknown")).digest("hex").slice(0, 16);
+  return "ismsquest:rl:" + createHmac("sha256", secret).update(forwarded || "unknown").digest("hex").slice(0, 16);
 }
 
 function readBody(req) {
@@ -114,6 +134,7 @@ export default async function handler(req, res) {
       const stored = await redis("ZRANGE", KEY, 0, RETURN - 1, "REV");
       const runs = (stored || []).map(parseEntry).filter(Boolean);
       runs.sort((a, b) => b.score - a.score || (a.time || 0) - (b.time || 0));
+      res.setHeader("Cache-Control", BOARD_CACHE);
       return res.status(200).json(runs);
     }
 
@@ -121,9 +142,7 @@ export default async function handler(req, res) {
       const entry = validate(readBody(req));
       if (!entry) return res.status(400).json({ error: "that is not a run" });
 
-      const limitKey = callerKey(req);
-      const posts = await redis("INCR", limitKey);
-      if (Number(posts) === 1) await redis("EXPIRE", limitKey, 3600);
+      const posts = await redis("EVAL", COUNT_LUA, 1, callerKey(req), String(WINDOW_SECONDS));
       if (Number(posts) > POSTS_PER_HOUR) return res.status(429).json({ error: "too many runs from here this hour" });
 
       await redis("ZADD", KEY, entry.score, JSON.stringify(entry));

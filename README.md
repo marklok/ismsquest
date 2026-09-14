@@ -103,10 +103,21 @@ variables:
 | --- | --- |
 | `UPSTASH_REDIS_REST_URL` | The Upstash integration, which may name it `KV_REST_API_URL` |
 | `UPSTASH_REDIS_REST_TOKEN` | The same, or `KV_REST_API_TOKEN` |
-| `SCORE_SALT` | Any random string. It salts the digests behind the rate limiter so no address is stored |
+| `SCORE_SALT` | Any random string, and required. The rate limiter keys its counters by an HMAC of the caller's address under this secret, so the stored identifier is pseudonymous rather than anonymous: unreversible without the secret, but stable for the same address. Counters expire after an hour. Without the secret the function refuses to record rather than fall back to a guessable key |
 
 Without the first two the game still runs: the scoreboard quietly falls back to a list kept
-in the player's own browser.
+in the player's own browser. The board is served with a five-second edge cache so a burst of
+readers costs one Redis call, and every Redis call carries a five-second deadline.
+
+`vercel.json` sets the browser hardening headers: a Content Security Policy, `nosniff`,
+`X-Frame-Options` and a referrer policy. The policy allows inline script because the game is
+one inline script by design; the protection it buys is against framing, plugins, base-tag
+hijacking and loading from anywhere but the game's own origin and its two font hosts.
+
+Two abuse controls live in the dashboard rather than the repo and are worth setting before
+sharing the link widely: an edge rate limit on `/api/scores` in Vercel's firewall, and spend
+or usage alerts on both Vercel and Upstash. The function's own limit bounds accepted runs per
+address; it does not bound how often the endpoint can be hit.
 
 Vercel Web Analytics needs turning on in the project's Analytics tab; the page requests its
 script only when it is not being served from localhost, so local sessions stay out of the
